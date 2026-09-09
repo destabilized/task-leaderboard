@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MVTHS Robotics Task Leaderboard</title>
+  <link rel="icon" type="image/svg+xml" href="logo.svg">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+
+    <header class="header">
+      <div class="header-top">
+        <h1 class="header-title">
+          <img class="logo" src="logo.svg" alt="MVTHS Engineering logo">
+          <span>Robotics Task Leaderboard</span>
+        </h1>
+        <input
+          type="text"
+          id="search-input"
+          class="search-input"
+          placeholder="Search all names..."
+          autocomplete="off"
+        >
+      </div>
+    </header>
+
+    <section class="filters-section">
+      <div class="filter-group">
+        <span class="filter-group-label">range</span>
+        <button class="filter-btn active" data-range="24h">24h</button>
+        <button class="filter-btn" data-range="5d">5d</button>
+        <button class="filter-btn" data-range="30d">30d</button>
+        <button class="filter-btn" data-range="all">all time</button>
+      </div>
+      <span class="filter-divider"></span>
+      <div class="filter-group">
+        <span class="filter-group-label">grade</span>
+        <button class="grade-btn active" data-grade="all">all grades</button>
+        <button class="grade-btn" data-grade="10">gr 10</button>
+        <button class="grade-btn" data-grade="11">gr 11</button>
+        <button class="grade-btn" data-grade="12">gr 12</button>
+      </div>
+      <span class="filter-divider"></span>
+      <div class="filter-group">
+        <span class="filter-group-label">sort</span>
+        <button class="sort-btn active" data-sort="points">by points</button>
+        <button class="sort-btn" data-sort="tasks">by tasks</button>
+      </div>
+    </section>
+
+    <section class="summary-section">
+      <span id="summary-text" class="summary-text"></span>
+      <span id="source-badge" class="source-badge"></span>
+    </section>
+
+    <main class="leaderboard-container">
+      <div class="status-bar" id="status-bar">
+        <span>Loading data...</span>
+      </div>
+      <table class="leaderboard" id="leaderboard">
+        <thead>
+          <tr>
+            <th class="col-rank">#</th>
+            <th class="col-name">name</th>
+            <th class="col-tasks">completed tasks</th>
+            <th class="col-points">total points</th>
+            <th class="col-actions">actions</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboard-body">
+        </tbody>
+      </table>
+    </main>
+
+    <footer class="footer">
+      <span class="footer-text">
+        made by <a class="footer-link" href="https://andrewhuang.cc" target="_blank" rel="noopener">andrew</a> · mostly vibecoded
+      </span>
+    </footer>
+
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
