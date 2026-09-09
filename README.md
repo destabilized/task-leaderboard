@@ -52,23 +52,47 @@ Open <http://localhost:8000>.
 
 ## Configuration
 
-`config.json` only needs the CSV export URL of a published Google Sheet:
+The sheet URL can be set two ways:
+
+- **Environment variable** (preferred for hosting) — set `SHEET_URL` and it wins
+  over everything. `config.json` is never created or modified on the server.
+- **`config.json`** (local dev) — copy `config.example.json` to `config.json`
+  and paste your sheet URL into `sheet_url`.
+
+The URL must be the **published CSV export** of your Google Sheet. Publish it
+via **File → Share → Publish to web** (pick the tab with the task data), then
+use the resulting URL — it ends in `/pub?output=csv`:
 
 ```json
 {
-  "sheet_url": "https://docs.google.com/spreadsheets/d/<ID>/export?format=csv&gid=0"
+  "sheet_url": "https://docs.google.com/spreadsheets/d/e/<PUBLISHED_ID>/pub?output=csv"
 }
 ```
 
-Derive it from your sheet's address bar: `.../spreadsheets/d/<ID>/edit#gid=0` →
-`.../spreadsheets/d/<ID>/export?format=csv&gid=0`. The CSV headers are
-`Task, Name, List Date, Start Date, End Date`.
+The CSV headers are `Task, Name, List Date, Start Date, End Date`.
 
 Environment variables:
 
 | Variable | Purpose |
 | --- | --- |
+| `SHEET_URL` | Published CSV export URL of the Google Sheet |
 | `POLL_INTERVAL` | Seconds between sheet fetches (default `1`) |
+
+## Deploying to Render
+
+The repo is pre-configured for [Render](https://render.com) (`Procfile`,
+`runtime.txt`, `requirements.txt`).
+
+1. Push this repo to GitHub and create a new **Web Service** on Render from it.
+2. Add an environment variable:
+   - `SHEET_URL` → your published CSV export URL.
+   - (Optional) `POLL_INTERVAL=30` to avoid hammering Google Sheets.
+3. Deploy. Render auto-detects Python and the gunicorn start command.
+4. Add a custom domain (e.g. `leaderboard.example.com`) under
+   **Settings → Custom Domains** and point a CNAME at the target it shows you.
+
+> Note: on Render's free tier the service sleeps after ~15 min of inactivity
+> and takes about a minute to wake on the next visit.
 
 ## Project structure
 
