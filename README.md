@@ -16,7 +16,7 @@ A live task leaderboard for the MVTHS Engineering shop. Completed tasks are trac
 | --- | --- |
 | Complexity | Task name matched against keyword tiers → 1, 3, or 5 base points |
 | Speed | Finished within a short window → bonus; over the lead time → per-day penalty |
-| Grade bonus | Gr 10 `+0.2`, Gr 11 `+0.1`, Gr 12 `+0.0` (additive) |
+| Grade bonus |  sophomores `+0.2`, juniors `+0.1`, seniors `+0.0` (additive, not multiplicative) |
 | Floor | A task can never score below **0.5 points**, no matter how slow |
 
 Business days skip weekends and the school calendar stored in `EXCLUDED_DAYS`.
