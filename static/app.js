@@ -70,7 +70,7 @@ function updateSourceBadge() {
 
 async function loadFromBackend() {
   try {
-    const res = await fetch('/api/data');
+    const res = await fetch('/api/data', { cache: 'no-store' });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     applyPayload(await res.json());
     showStatus('');

@@ -1,3 +1,3 @@
 {
-  "sheet_url": "https://docs.google.com/spreadsheets/d/e/YOUR_PUBLISHED_SHEET_ID/pub?output=csv"
+  "sheet_url": "https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID/export?format=csv&gid=0"
 }

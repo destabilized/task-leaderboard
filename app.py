@@ -485,13 +485,17 @@ def static_files(filename):
 
 @app.route('/api/data')
 def api_data():
-    return jsonify(build_payload())
+    resp = jsonify(build_payload())
+    resp.headers['Cache-Control'] = 'no-store'
+    return resp
 
 
 @app.route('/api/source')
 def api_source():
     with state_lock:
-        return jsonify({'sheet_url': state['sheet_url'], 'source': state['source']})
+        resp = jsonify({'sheet_url': state['sheet_url'], 'source': state['source']})
+    resp.headers['Cache-Control'] = 'no-store'
+    return resp
 
 
 @app.route('/api/config', methods=['POST'])
