@@ -5,9 +5,10 @@ let activeRange = '24h';
 let gradeFilter = 'all';
 let searchQuery = '';
 let expandedUser = null;
-let sseDead = true;
 let sourceInfo = '';
 let sortMode = 'points';
+
+const REFRESH_MS = 5000;
 
 const RANGE_MS = {
   '24h': 24 * 60 * 60 * 1000,
@@ -49,61 +50,30 @@ function applyPayload(payload) {
     usersData = payload.users;
     taskCounts = payload.task_counts || null;
     sourceInfo = payload.source || '';
-    updateSourceBadge();
+    updateSourceBadge(true);
   }
   renderLeaderboard();
 }
 
-function updateSourceBadge() {
+function updateSourceBadge(ok) {
   const el = document.getElementById('source-badge');
-  const live = !sseDead;
-  const label = sourceInfo === 'google-sheet'
-    ? 'live · google sheet'
-    : sourceInfo === 'sample'
-      ? 'live · sample data'
-      : sourceInfo
-        ? `live · ${sourceInfo}`
-        : 'connecting...';
-  el.className = 'source-badge' + (live ? ' live' : ' offline');
-  el.innerHTML = live ? `<span class="live-dot"></span>${escapeHtml(label)}` : escapeHtml(`<span class="live-dot"></span>${label}`);
+  const label = ok
+    ? (sourceInfo === 'google-sheet' ? 'live · google sheet' : 'live · ' + (sourceInfo || 'connected'))
+    : 'offline — retrying…';
+  el.className = 'source-badge' + (ok ? ' live' : ' offline');
+  const dot = '<span class="live-dot"></span>';
+  el.innerHTML = ok ? dot + escapeHtml(label) : escapeHtml(label);
 }
 
 async function loadFromBackend() {
   try {
-    const res = await fetch('/api/data', { cache: 'no-store' });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    applyPayload(await res.json());
+    const csv = await LeaderboardScoring.loadSheetCSV();
+    applyPayload(LeaderboardScoring.buildPayload(csv));
     showStatus('');
   } catch (err) {
-    showStatus(`Error loading data: ${escapeHtml(err.message)}`, true);
+    updateSourceBadge(false);
+    showStatus('Offline — retrying… ' + escapeHtml(err.message), true);
   }
-}
-
-
-/* === sse live updates === */
-
-function connectSSE() {
-  sseDead = true;
-  updateSourceBadge();
-  const es = new EventSource('/api/events');
-
-  es.onmessage = (e) => {
-    if (!e.data) return;
-    sseDead = false;
-    updateSourceBadge();
-    try {
-      applyPayload(JSON.parse(e.data));
-    } catch (err) {
-      console.error('Bad SSE payload', err);
-    }
-  };
-
-  es.onerror = () => {
-    sseDead = true;
-    updateSourceBadge();
-    es.close();
-    setTimeout(connectSSE, 4000);
-  };
 }
 
 
@@ -360,11 +330,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupExpandDelegation();
 
   await loadFromBackend();
-  connectSSE();
-
-  setInterval(() => {
-    if (sseDead) loadFromBackend();
-  }, 15000);
+  setInterval(loadFromBackend, REFRESH_MS);
 
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) loadFromBackend();

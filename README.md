@@ -1,14 +1,26 @@
 # MVTHS Robotics Task Leaderboard
 
-A live task leaderboard for the MVTHS Engineering shop. Completed tasks are tracked in a Google Sheet, scored by complexity, speed, and grade level, and pushed to the leaderboard in real time over Server-Sent Events.
+A live task leaderboard for the MVTHS Engineering shop. Completed tasks are
+tracked in a Google Sheet, scored by complexity, speed, and grade level, and
+displayed in everyone's browser in real time.
+
+Fully **static** — no server. It fetches the published Sheet CSV straight from
+the browser, computes all scores client-side, and re-polls every few seconds.
 
 ## Features
 
-- **Live updates** — the backend polls the sheet and broadcasts changes to every open page over SSE, with a polling fallback for dropped connections.
-- **Task scoring** — each task earns base points by complexity (1 / 3 / 5), a speed bonus or penalty (based on business days taken), and a small grade-level bonus.
-- **Rankings** — sort by total points or completed tasks, filter by timeframe (24h / 5d / 30d / all time) and grade, and search across every name.
-- **Per-student breakdown** — expand any row to see every task: dates, business days, base points, extra points, and totals.
-- **Mobile friendly** — responsive layout, compact detail view, and tap-to-expand on small screens.
+- **Live updates** — the page polls the published sheet every 5 seconds, so
+  scores refresh almost immediately after the sheet changes.
+- **Task scoring** — each task earns base points by complexity (1 / 3 / 5), a
+  speed bonus or penalty (based on business days taken), and a small
+  grade-level bonus.
+- **Rankings** — sort by total points or completed tasks, filter by timeframe
+  (24h / 5d / 30d / all time) and grade, and search across every name.
+- **Per-student breakdown** — expand any row to see every task: dates, business
+  days, base points, extra points, and totals.
+- **Mobile friendly** — responsive layout, compact detail view, and
+  tap-to-expand on small screens.
+- **Mr. L is excluded** — assigned work is scored only for students.
 
 ## How scoring works
 
@@ -16,110 +28,79 @@ A live task leaderboard for the MVTHS Engineering shop. Completed tasks are trac
 | --- | --- |
 | Complexity | Task name matched against keyword tiers → 1, 3, or 5 base points |
 | Speed | Finished within a short window → bonus; over the lead time → per-day penalty |
-| Grade bonus |  sophomores `+0.2`, juniors `+0.1`, seniors `+0.0` (additive, not multiplicative) |
+| Grade bonus | Gr 10 `+0.2`, Gr 11 `+0.1`, Gr 12 `+0.0` (additive) |
 | Floor | A task can never score below **0.5 points**, no matter how slow |
 
-Business days skip weekends and the school calendar stored in `EXCLUDED_DAYS`.
+Business days skip weekends and the school calendar stored in `EXCLUDED_DAYS`
+in `scoring.js`.
 
-> Scoring rules (`SPEED_RULES`, `KEYWORD_POINTS`, `GRADE_BONUS`) are plain dictionaries at the top of `app.py` — tune them without touching the rest of the app.
+> Scoring rules (`SPEED_RULES`, `KEYWORD_POINTS`, `GRADE_BONUS`) are plain
+> objects at the top of `scoring.js` — tune them without touching the UI.
 
 ## Tech stack
 
-- **Backend** — Flask (Python 3.12+), requests, threading
-- **Frontend** — vanilla JS + CSS, no build step
-- **Realtime** — Server-Sent Events (`/api/events`) with content-hash change detection
+- **Vanilla JS + CSS**, no build step, no dependencies
+- **Google Sheets** published CSV export
+- **5-second client-side polling** (no backend, no SSE, no server)
 
 ## Getting started
 
 ```bash
-# 1. clone and enter the project
-git clone <your-repo-url> task-leaderboard
 cd task-leaderboard
 
-# 2. create a virtual environment and install deps
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-
-# 3. configure your sheet (see below)
-cp config.example.json config.json
-
-# 4. run it
-python app.py
+# serve the folder (any static server works)
+python3 -m http.server 8000
 ```
 
 Open <http://localhost:8000>.
 
 ## Configuration
 
-The sheet URL can be set two ways:
+The only thing to configure is the sheet URL at the top of `scoring.js`:
 
-- **Environment variable** (preferred for hosting) — set `SHEET_URL` and it wins
-  over everything. `config.json` is never created or modified on the server.
-- **`config.json`** (local dev) — copy `config.example.json` to `config.json`
-  and paste your sheet URL into `sheet_url`.
-
-The URL must be the **published CSV export** of your Google Sheet. Publish it
-via **File → Share → Publish to web** (pick the tab with the task data), then
-use the resulting URL — it ends in `/pub?output=csv`:
-
-```json
-{
-  "sheet_url": "https://docs.google.com/spreadsheets/d/e/<PUBLISHED_ID>/pub?output=csv"
-}
+```js
+var SHEET_URL = 'https://docs.google.com/spreadsheets/d/<SHEET_ID>/export?format=csv&gid=0';
 ```
+
+Use the **CSV export** URL of your sheet. Two ways to get one:
+
+- From a sheet shared as **"anyone with the link can view"**:
+  `.../spreadsheets/d/<SHEET_ID>/export?format=csv&gid=0`
+- From a sheet **published to the web** (File → Share → Publish to web), the
+  generated URL ends in `/pub?output=csv`.
 
 The CSV headers are `Task, Name, List Date, Start Date, End Date`.
 
-Environment variables:
+## Deploying
 
-| Variable | Purpose |
-| --- | --- |
-| `SHEET_URL` | Published CSV export URL of the Google Sheet |
-| `POLL_INTERVAL` | Seconds between sheet fetches (default `1`) |
+The site is plain static files — deploy anywhere you'd host a web page.
 
-## Deploying to Render
+### GitHub Pages
 
-The repo is pre-configured for [Render](https://render.com) (`Procfile`,
-`runtime.txt`, `requirements.txt`).
+1. Push this repo to GitHub.
+2. Repo **Settings → Pages** → Source: "Deploy from a branch", branch `main`, `/` (root).
+3. It goes live at `https://<user>.github.io/task-leaderboard`.
 
-1. Push this repo to GitHub and create a new **Web Service** on Render from it.
-2. Add an environment variable:
-   - `SHEET_URL` → your published CSV export URL.
-   - (Optional) `POLL_INTERVAL=30` to avoid hammering Google Sheets.
-3. Deploy. Render auto-detects Python and the gunicorn start command.
-4. Add a custom domain (e.g. `leaderboard.example.com`) under
-   **Settings → Custom Domains** and point a CNAME at the target it shows you.
+### Cloudflare Pages
 
-> Note: on Render's free tier the service sleeps after ~15 min of inactivity
-> and takes about a minute to wake on the next visit.
+1. Push this repo to GitHub.
+2. In Cloudflare Pages → Create project → connect the repo.
+3. Build command: *(none)*, output directory: `/`.
+
+Either way, you can then attach a custom domain (e.g.
+`leaderboard.mvthsengineering.com`) under the host's domain settings.
 
 ## Project structure
 
 ```
 task-leaderboard/
-├── app.py                  # flask server, scoring, polling, sse
-├── config.example.json     # template config (copy to config.json)
-├── requirements.txt
-├── static/
-│   ├── index.html          # leaderboard markup
-│   ├── style.css           # dark terminal theme
-│   ├── app.js              # filtering, ranking, rendering
-│   └── logo.svg            # mvths engineering mark
+├── index.html          # page markup
+├── style.css           # dark terminal theme
+├── scoring.js          # sheet parsing + scoring engine (ports the old backend logic)
+├── app.js              # fetching, filtering, ranking, rendering
+├── logo.svg            # mvths engineering mark
+└── .nojekyll           # tells GitHub Pages it's a static site, not Jekyll
 ```
-
-## API
-
-| Endpoint | Description |
-| --- | --- |
-| `GET /` | Serves the leaderboard |
-| `GET /api/data` | Full leaderboard payload (users, counts, source) |
-| `GET /api/events` | SSE stream pushed on every data change |
-| `GET /api/source` | Current sheet URL + data source |
-| `POST /api/config` | Update the sheet URL at runtime |
-
-If no `config.json` exists, the app boots with bundled sample data so it is
-immediately usable.
 
 ## License
 
