@@ -45,9 +45,9 @@ var LeaderboardScoring = (function () {
         'calipers', 'coolant', 'multimeter', '3d printers', 'sort', 'photos',
         'plasma cutter', 'ensure', 'clips', 'bolts'],
     3: ['setup', 'amplifier', 'fix', 'repair', 'update',
-        'move', 'take apart', 'formlabs', 'bambu', 'mills'],
+        'move', 'take apart', 'formlabs', 'bambu', 'mills', 'debug'],
     5: ['organization', 'rework', 'machine shop', 'gridfinity', 'solder',
-        'circuit', 'stoplight', 'compliance', 'square', 'stock', 'typewriter']
+        'circuit', 'stoplight', 'compliance', 'square', 'stock', ]
   };
 
   var NAME_CORRECTIONS = { 'Asyia': 'Asiya' };
@@ -133,13 +133,20 @@ var LeaderboardScoring = (function () {
   function parseDate(value) {
     var v = String(value == null ? '' : value).trim().replace(/^"|"$/g, '');
     if (!v) return null;
-    var m = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    var     m = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
     if (m) return localDate(+m[1], +m[2], +m[3]);
     m = v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
     if (m) return localDate(+m[3], +m[1], +m[2]);
+    m = v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2})$/);
+    if (m) return localDate(expandYear(+m[3]), +m[1], +m[2]);
     m = v.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
     if (m) return localDate(+m[1], +m[2], +m[3]);
     return null;
+  }
+
+  function expandYear(yy) {
+    if (yy >= 100) return yy;
+    return yy < 70 ? 2000 + yy : 1900 + yy;
   }
 
   function localDate(y, m, d) {

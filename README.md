@@ -87,9 +87,6 @@ The site is plain static files — deploy anywhere you'd host a web page.
 2. In Cloudflare Pages → Create project → connect the repo.
 3. Build command: *(none)*, output directory: `/`.
 
-Either way, you can then attach a custom domain (e.g.
-`leaderboard.mvthsengineering.com`) under the host's domain settings.
-
 ## Project structure
 
 ```
