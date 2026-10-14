@@ -187,16 +187,6 @@ function renderLeaderboard() {
   updateSummary(display.length, totalTasks);
 }
 
-function buildExtraReason(t) {
-  const parts = [];
-  const sp = Number(t.speed_points);
-  if (sp > 0) parts.push(`speed +${sp} \u00b7 ${t.business_days} days`);
-  else if (sp < 0) parts.push(`speed ${sp} \u00b7 ${t.business_days} days`);
-  const gb = Number(t.grade_bonus);
-  if (gb > 0) parts.push(`grade +${gb}`);
-  return parts;
-}
-
 function buildDetailContent(container, tasks) {
   let html = `<table class="detail-table">
     <thead>
@@ -204,29 +194,22 @@ function buildDetailContent(container, tasks) {
         <th>task name</th>
         <th>start date</th>
         <th>end date</th>
-        <th>days taken</th>
-        <th>base points</th>
-        <th>extra points</th>
-        <th>total points</th>
+        <th>points</th>
       </tr>
     </thead>
     <tbody>`;
 
   tasks.forEach(t => {
-    const extra = round(t.weighted_points - t.base_points);
-    const reasons = buildExtraReason(t);
+    const bonus = Number(t.grade_bonus) || 0;
     html += `
       <tr>
         <td class="detail-task-name">${escapeHtml(t.task)}</td>
         <td>${escapeHtml(t.start)}</td>
         <td>${escapeHtml(t.end)}</td>
-        <td>${t.business_days}</td>
-        <td>${t.base_points}</td>
-        <td class="detail-extra">
-          ${extra > 0 ? '+' : ''}${extra}
-          <div class="detail-reason">${reasons.length ? escapeHtml(reasons.join(' · ')) : 'no extras'}</div>
+        <td class="detail-points">
+          ${t.weighted_points}
+          <h6 class="detail-bonus-note">${bonus > 0 ? `grade bonus +${bonus}` : 'no bonus points'}</h6>
         </td>
-        <td class="detail-points">${t.weighted_points}</td>
       </tr>`;
   });
 

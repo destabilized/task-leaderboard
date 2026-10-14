@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MVTHS Robotics Tasks</title>
+  <link rel="icon" type="image/svg+xml" href="../imgs/logo.svg">
+  <link rel="stylesheet" href="../css/style.css?v=13">
+</head>
+<body>
+  <div class="app">
+
+    <header class="header">
+      <div class="header-top">
+        <h1 class="header-title">
+          <a class="header-home" href="../" title="Back to leaderboard">
+            <img class="logo" src="../imgs/logo.svg" alt="MVTHS Engineering logo">
+            <span>Shop Tasks</span>
+          </a>
+        </h1>
+      </div>
+    </header>
+
+    <section class="summary-section">
+      <span id="tasks-summary" class="summary-text"></span>
+      <span id="source-badge" class="source-badge"></span>
+    </section>
+
+    <main class="leaderboard-container">
+      <div class="status-bar" id="status-bar">
+        <span>Loading tasks...</span>
+      </div>
+      <table class="task-table" id="task-table">
+        <thead>
+          <tr>
+            <th class="col-task">task</th>
+            <th class="col-claimant">claimed by</th>
+            <th class="col-days">days since claimed</th>
+            <th class="col-points">points</th>
+            <th class="col-actions"></th>
+          </tr>
+        </thead>
+        <tbody id="task-body">
+        </tbody>
+      </table>
+    </main>
+
+    <footer class="footer">
+      <span class="footer-text">
+        made by <a class="footer-link" href="https://andrewhuang.cc" target="_blank" rel="noopener">andrew</a> · mostly vibecoded
+      </span>
+    </footer>
+
+  </div>
+
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal" role="dialog" aria-modal="true">
+      <button type="button" class="modal-x" id="modal-close" aria-label="Close">&times;</button>
+      <div class="modal-body" id="modal-body"></div>
+    </div>
+  </div>
+
+  <script src="../js/scoring.js?v=13"></script>
+  <script src="../js/tasks.js?v=13"></script>
+</body>
+</html>

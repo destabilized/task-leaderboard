@@ -1,11 +1,13 @@
 /* leaderboard scoring engine — ported from app.py.
    Pure client-side: parses the published Google Sheet CSV and computes
-   leaders, counts, points, and breakdowns. No backend. */
+   leaders, counts, points, and breakdowns. No backend.
+   Task points are read straight from the sheet's "Points" column; a
+   grade-level bonus is added on top. No keyword complexity or speed math. */
 
 var LeaderboardScoring = (function () {
   'use strict';
 
-  var SHEET_URL = 'https://docs.google.com/spreadsheets/d/1Vgi7cwCR110Nwbzy2nHhevbcVCJZGh3byrsZOwRQjqY/export?format=csv&gid=0';
+  var SHEET_URL = 'https://docs.google.com/spreadsheets/d/1J6YyU7UEmhdiCUZxvAfVy1on6x0O-srnTMk-t3PS4H4/export?format=csv&gid=0';
 
   var USER_GRADES = {
     'Alex B.': 12, 'Quinn': 12, 'Lila': 12, 'Sydney': 12, 'Miles': 12,
@@ -39,34 +41,10 @@ var LeaderboardScoring = (function () {
 
   var GRADE_BONUS = { 10: 0.2, 11: 0.1, 12: 0.0 };
 
-  var KEYWORD_POINTS = {
-    1: ['sweep', 'adblocker', 'battery', 'air out', 'check', 'replace',
-        'return', 'hang', 'clipboard', 'add', 'youtube', 'user lists',
-        'calipers', 'coolant', 'multimeter', '3d printers', 'sort', 'photos',
-        'plasma cutter', 'ensure', 'clips', 'bolts'],
-    3: ['setup', 'amplifier', 'fix', 'repair', 'update',
-        'move', 'take apart', 'formlabs', 'bambu', 'mills', 'debug'],
-    5: ['organization', 'rework', 'machine shop', 'gridfinity', 'solder',
-        'circuit', 'stoplight', 'compliance', 'square', 'stock', ]
-  };
+  var NAME_CORRECTIONS = { 'Asyia': 'Asiya', };
 
-  var NAME_CORRECTIONS = { 'Asyia': 'Asiya' };
-
-  var EXCLUDED_DAYS = [
-    '2026-9-4', '2026-9-7', '2026-9-21', '2026-10-12', '2026-11-3',
-    '2026-11-11', '2026-11-26', '2026-11-27', '2026-12-24', '2026-12-25',
-    '2026-12-26', '2026-12-28', '2026-12-29', '2026-12-30', '2026-12-31',
-    '2027-1-1', '2027-1-18', '2027-1-19', '2027-2-15', '2027-2-16',
-    '2027-2-17', '2027-2-18', '2027-2-19', '2027-3-9', '2027-3-26',
-    '2027-4-19', '2027-4-20', '2027-4-21', '2027-4-22', '2027-4-23',
-    '2027-5-31', '2027-6-18',
-  ];
-
-  var SPEED_RULES = {
-    1: { bonus: 0.5, bonus_days: 1, lead: 3, penalty_per_day: 1.5 },
-    3: { bonus: 1, bonus_days: 2, lead: 5, penalty_per_day: 1.0 },
-    5: { bonus: 1.5, bonus_days: 3, lead: 8, penalty_per_day: 0.5 },
-  };
+  var CANONICAL_NAMES = {};
+  Object.keys(USER_GRADES).forEach(function (n) { CANONICAL_NAMES[nameKey(n)] = n; });
 
   var DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -167,6 +145,21 @@ var LeaderboardScoring = (function () {
     return parts.map(function (n) { return n.trim(); }).filter(function (n) { return n.length > 0; });
   }
 
+  function nameKey(name) {
+    return String(name == null ? '' : name).toLowerCase().replace(/[^a-z0-9]/g, '');
+  }
+
+  function normalizeName(name) {
+    var n = String(name == null ? '' : name)
+      .replace(/,/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/\.$/, '');
+    n = n.replace(/(^|\s)([A-Za-z])$/, '$1$2.');
+    n = NAME_CORRECTIONS[n] || n;
+    return CANONICAL_NAMES[nameKey(n)] || n;
+  }
+
   function isIgnoredName(name) {
     var key = String(name == null ? '' : name).toLowerCase().replace(/[^a-z0-9]/g, '');
     return key === 'everyone' || key === 'mrl';
@@ -178,58 +171,17 @@ var LeaderboardScoring = (function () {
 
   /* === scoring === */
 
-  function getBusinessDays(start, end) {
-    var excluded = {};
-    EXCLUDED_DAYS.forEach(function (d) {
-      var dt = parseDate(d);
-      if (dt) excluded[dt.getTime()] = true;
-    });
-    var step = end >= start ? 1 : -1;
-    var cur = new Date(start.getTime());
-    var count = 0;
-    while (true) {
-      var dow = cur.getDay();
-      if (dow !== 0 && dow !== 6 && !excluded[cur.getTime()]) count++;
-      if (cur.getTime() === end.getTime()) break;
-      cur.setDate(cur.getDate() + step);
-    }
-    return count;
-  }
-
-  function speedModifier(complexity, bizDays) {
-    var r = SPEED_RULES[complexity] || SPEED_RULES[1];
-    if (bizDays <= r.bonus_days) return r.bonus;
-    if (bizDays > r.lead) {
-      var over = bizDays - r.lead;
-      return round2(-(over * r.penalty_per_day));
-    }
-    return 0;
-  }
-
-  function scoreTask(taskName, start, end, name) {
-    var taskLower = String(taskName).toLowerCase();
-    var complexity = 1;
-    [1, 3, 5].some(function (score) {
-      if (KEYWORD_POINTS[score].some(function (kw) { return taskLower.indexOf(kw) !== -1; })) {
-        complexity = score;
-        return true;
-      }
-      return false;
-    });
-
-    var bizDays = getBusinessDays(start, end);
-    var speed = round2(speedModifier(complexity, bizDays));
-    speed = Math.max(speed, round2(0.5 - complexity));
-    var raw = round2(complexity + speed);
+  function scoreTask(points, name) {
+    var base = Number(points);
+    if (!isFinite(base) || base < 0) base = 0;
+    base = round2(base);
     var grade = USER_GRADES[name] !== undefined ? USER_GRADES[name] : 9;
     var bonus = GRADE_BONUS[grade] !== undefined ? GRADE_BONUS[grade] : 0.0;
-    var weighted = round2(raw + bonus);
+    var weighted = round2(base + bonus);
 
     return {
       grade: grade,
-      business_days: bizDays,
-      base_points: complexity,
-      speed_points: speed,
+      base_points: base,
       grade_bonus: bonus,
       weighted_points: weighted,
     };
@@ -240,7 +192,7 @@ var LeaderboardScoring = (function () {
 
     rows.forEach(function (r) {
       splitNames(r['Name'] || '').forEach(function (rawName) {
-        var n = NAME_CORRECTIONS[rawName] || rawName;
+        var n = normalizeName(rawName);
         if (!isIgnoredName(n)) mentioned[n] = true;
       });
     });
@@ -253,9 +205,9 @@ var LeaderboardScoring = (function () {
       if (!end) return;
       if (!start) start = end;
       splitNames(r['Name'] || '').forEach(function (rawName) {
-        var n = NAME_CORRECTIONS[rawName] || rawName;
+        var n = normalizeName(rawName);
         if (!isIgnoredName(n)) {
-          tasks.push({ task: (r['Task'] || '').trim(), name: n, start: start, end: end });
+          tasks.push({ task: (r['Task'] || '').trim(), name: n, start: start, end: end, points: r['Points'] });
         }
       });
     });
@@ -305,7 +257,7 @@ var LeaderboardScoring = (function () {
     });
 
     tasks.forEach(function (t) {
-      var s = scoreTask(t.task, t.start, t.end, t.name);
+      var s = scoreTask(t.points, t.name);
       if (!users[t.name]) {
         users[t.name] = { grade: s.grade, website: null, tasks: [] };
       }
@@ -313,9 +265,7 @@ var LeaderboardScoring = (function () {
         task: t.task,
         start: isoDate(t.start),
         end: isoDate(t.end),
-        business_days: s.business_days,
         base_points: s.base_points,
-        speed_points: s.speed_points,
         grade_bonus: s.grade_bonus,
         weighted_points: s.weighted_points,
       });
@@ -329,10 +279,53 @@ var LeaderboardScoring = (function () {
     return users;
   }
 
+  function displayName(rawName) {
+    return splitNames(rawName || '').map(normalizeName).join(', ');
+  }
+
+  function listAllTasks(rows) {
+    var now = new Date();
+    var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var list = [];
+
+    rows.forEach(function (r) {
+      var task = (r['Task'] || '').trim();
+      if (!task) return;
+
+      var name = displayName(r['Name']);
+      var start = parseDate(r['Start Date']);
+      var end = parseDate(r['End Date']);
+      var points = Number(r['Points']);
+      if (!isFinite(points)) points = null;
+
+      var claim = start;
+      if (!claim && name) claim = parseDate(r['List Date']);
+
+      var daysClaimed = null;
+      if (claim) {
+        var claimMid = new Date(claim.getFullYear(), claim.getMonth(), claim.getDate());
+        daysClaimed = Math.max(0, Math.round((today.getTime() - claimMid.getTime()) / DAY_MS));
+      }
+
+      list.push({
+        task: task,
+        name: name,
+        points: points,
+        start: claim ? isoDate(claim) : '',
+        end: end ? isoDate(end) : '',
+        completed: Boolean(end),
+        days_claimed: daysClaimed,
+      });
+    });
+
+    return list;
+  }
+
   /* === public api === */
 
   function loadSheetCSV() {
-    return fetch(SHEET_URL).then(function (res) {
+    var url = SHEET_URL + (SHEET_URL.indexOf('?') === -1 ? '?' : '&') + '_=' + Date.now();
+    return fetch(url).then(function (res) {
       if (!res.ok) throw new Error('HTTP ' + res.status);
       return res.text();
     });
@@ -358,6 +351,8 @@ var LeaderboardScoring = (function () {
     processRows: processRows,
     countCompletedTasks: countCompletedTasks,
     computeUsers: computeUsers,
+    listAllTasks: listAllTasks,
+    normalizeName: normalizeName,
     loadSheetCSV: loadSheetCSV,
     buildPayload: buildPayload,
   };

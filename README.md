@@ -1,104 +1,77 @@
 # MVTHS Robotics Task Leaderboard
 
-A live task leaderboard for the MVTHS Engineering shop. Completed tasks are
-tracked in a Google Sheet, scored by complexity, speed, and grade level, and
-displayed in everyone's browser in real time.
+taskboard for the mvths engineering shop that tracks the amount of tasks you have completed and the amount of points you recieved for the tasks. tasks are tracked in a  google sheet which lists the start date, finish date, points, task, and who is completing the task. whenever the sheet updates, the leaderboard updates as well. 
 
-Fully **static** — no server. It fetches the published Sheet CSV straight from
-the browser, computes all scores client-side, and re-polls every few seconds.
+static site—it's a published csv sheet that is pulled from the browser and computes all the scores on the client, repolling every few seconds
 
-## Features
 
-- **Live updates** — the page polls the published sheet every 5 seconds, so
+## features
+
+- **live updates** — the page polls the published sheet every 5 seconds, so
   scores refresh almost immediately after the sheet changes.
-- **Task scoring** — each task earns base points by complexity (1 / 3 / 5), a
-  speed bonus or penalty (based on business days taken), and a small
-  grade-level bonus.
-- **Rankings** — sort by total points or completed tasks, filter by timeframe
+- **rankings** — sort by total points or completed tasks, filter by timeframe
   (24h / 5d / 30d / all time) and grade, and search across every name.
-- **Per-student breakdown** — expand any row to see every task: dates, business
-  days, base points, extra points, and totals.
-- **Mobile friendly** — responsive layout, compact detail view, and
+- **per-student breakdown** — expand any row to see every task: its dates and
+  points, with any grade bonus noted underneath.
+- **mobile friendly** — responsive layout, compact detail view, and
   tap-to-expand on small screens.
-- **Mr. L is excluded** — assigned work is scored only for students.
+- **shop tasks page** — `/tasks/` lists every task; students can claim an
+  open task, mark a claimed task done, and reclaim a task that has sat
+  unclaimed for a while (see [claiming tasks](#claiming-tasks)).
 
-## How scoring works
+## scoring 
 
-| Component | Rule |
-| --- | --- |
-| Complexity | Task name matched against keyword tiers → 1, 3, or 5 base points |
-| Speed | Finished within a short window → bonus; over the lead time → per-day penalty |
-| Grade bonus | Gr 10 `+0.2`, Gr 11 `+0.1`, Gr 12 `+0.0` (additive) |
-| Floor | A task can never score below **0.5 points**, no matter how slow |
+the amount of points given per task is based on what the teachers (mr. christy and mr. l) deem as appropriate. harder to finish tasks (such as fixing / making something) will always be worth more than sorting / putting items away. 
 
-Business days skip weekends and the school calendar stored in `EXCLUDED_DAYS`
-in `scoring.js`.
+in addition, to incentivize underclassmen to do more tasks, there are additional point bonuses based on your grade:
 
-> Scoring rules (`SPEED_RULES`, `KEYWORD_POINTS`, `GRADE_BONUS`) are plain
-> objects at the top of `scoring.js` — tune them without touching the UI.
++0.2 points for sophomores and +0.1 points for juniors
 
-## Tech stack
+## tech stack
 
-- **Vanilla JS + CSS**, no build step, no dependencies
-- **Google Sheets** published CSV export
-- **5-second client-side polling** (no backend, no SSE, no server)
+- **vanilla JS + css**, no build step, no dependencies
+- **google sheets** published CSV export
+- **5s client-side polling** (no backend, no SSE, no server)
+- **google apps script** web app for writes (claim/done), optional
 
-## Getting started
+## claiming tasks
 
+`/tasks/` lets students update the sheet from the browser:
+
+- **claim** — an unclaimed task shows a `claim` button. Clicking it asks for a
+  name, then writes the name and today's date into the `Name` / `Start Date`
+  columns.
+- **done** — a claimed task shows a `done` button that writes today's date into
+  the `End Date` column.
+- **reclaim** — if a task has been claimed for more than 10 days, a `reclaim`
+  button appears (hover the days counter on desktop) to reassign it.
+
+These writes go through a Google Apps Script Web App (`apps-script/Code.gs`),
+since the browser can't edit a sheet directly. To set it up:
+
+1. Open the sheet → **Extensions → Apps Script**.
+2. Paste the contents of `apps-script/Code.gs`. Adjust `SHEET_ID` / `SHEET_NAME`
+   if needed.
+3. **Deploy → New deployment → Web app**. Set *Execute as: Me* and *Who has
+   access: Anyone*, then deploy and copy the `/exec` URL.
+4. Paste that URL into `TASKS_API_URL` at the top of `docs/js/tasks.js`.
+
+If `TASKS_API_URL` is empty, the tasks page still works as a read-only view
+but clicking claim/done shows a setup reminder.
+
+## getting started (if you want to make something like this as well)
+view `docs/js/scoring.js` and change whatever needs to be changed. (sheet url, grades, websites, bonus points, etc.)
+
+format a google sheet like the image below:
+![google sheet formatting](docs/imgs/example.webp)
+
+## starting the server 
 ```bash
-cd task-leaderboard
+cd task-leaderboard/docs
 
 # serve the folder (any static server works)
 python3 -m http.server 8000
 ```
 
-Open <http://localhost:8000>.
-
-## Configuration
-
-The only thing to configure is the sheet URL at the top of `scoring.js`:
-
-```js
-var SHEET_URL = 'https://docs.google.com/spreadsheets/d/<SHEET_ID>/export?format=csv&gid=0';
-```
-
-Use the **CSV export** URL of your sheet. Two ways to get one:
-
-- From a sheet shared as **"anyone with the link can view"**:
-  `.../spreadsheets/d/<SHEET_ID>/export?format=csv&gid=0`
-- From a sheet **published to the web** (File → Share → Publish to web), the
-  generated URL ends in `/pub?output=csv`.
-
-The CSV headers are `Task, Name, List Date, Start Date, End Date`.
-
-## Deploying
-
-The site is plain static files — deploy anywhere you'd host a web page.
-
-### GitHub Pages
-
-1. Push this repo to GitHub.
-2. Repo **Settings → Pages** → Source: "Deploy from a branch", branch `main`, `/` (root).
-3. It goes live at `https://<user>.github.io/task-leaderboard`.
-
-### Cloudflare Pages
-
-1. Push this repo to GitHub.
-2. In Cloudflare Pages → Create project → connect the repo.
-3. Build command: *(none)*, output directory: `/`.
-
-## Project structure
-
-```
-task-leaderboard/
-├── index.html          # page markup
-├── style.css           # dark terminal theme
-├── scoring.js          # sheet parsing + scoring engine (ports the old backend logic)
-├── app.js              # fetching, filtering, ranking, rendering
-├── logo.svg            # mvths engineering mark
-└── .nojekyll           # tells GitHub Pages it's a static site, not Jekyll
-```
-
-## License
-
-[MIT](LICENSE) — © MVTHS Engineering.
+open <http://localhost:8000>. the leaderboard is at `/` and the shop tasks
+page is at `/tasks/`.
