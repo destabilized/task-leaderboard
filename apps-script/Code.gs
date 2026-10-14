@@ -4,7 +4,7 @@
  * Deploy this as a Web App (Deploy > New deployment > Web app) with:
  *   - Execute as: Me
  *   - Who has access: Anyone
- * Then paste the /exec URL into TASKS_API_URL in docs/js/tasks.js.
+ * Then paste the /exec URL into TASKS_API_URL in src/js/tasks.js.
  *
  * The site posts JSON as text/plain (a "simple" CORS request) so the
  * browser won't preflight/block it. The response is ignored by the page;

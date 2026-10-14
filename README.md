@@ -1,4 +1,4 @@
-# MVTHS Robotics Task Leaderboard
+# mvths robotics task leaderboard
 
 taskboard for the mvths engineering shop that tracks the amount of tasks you have completed and the amount of points you recieved for the tasks. tasks are tracked in a  google sheet which lists the start date, finish date, points, task, and who is completing the task. whenever the sheet updates, the leaderboard updates as well. 
 
@@ -29,16 +29,16 @@ in addition, to incentivize underclassmen to do more tasks, there are additional
 
 ## tech stack
 
-- **vanilla JS + css**, no build step, no dependencies
-- **google sheets** published CSV export
-- **5s client-side polling** (no backend, no SSE, no server)
+- **vanilla js + css**, no build step, no dependencies
+- **google sheets** published csv export
+- **5s client-side polling** (no backend, no sse, no server)
 - **google apps script** web app for writes (claim/done), optional
 
 ## claiming tasks
 
 `/tasks/` lets students update the sheet from the browser:
 
-- **claim** — an unclaimed task shows a `claim` button. Clicking it asks for a
+- **claim** — an unclaimed task shows a `claim` button. clicking it asks for a
   name, then writes the name and today's date into the `Name` / `Start Date`
   columns.
 - **done** — a claimed task shows a `done` button that writes today's date into
@@ -46,28 +46,28 @@ in addition, to incentivize underclassmen to do more tasks, there are additional
 - **reclaim** — if a task has been claimed for more than 10 days, a `reclaim`
   button appears (hover the days counter on desktop) to reassign it.
 
-These writes go through a Google Apps Script Web App (`apps-script/Code.gs`),
-since the browser can't edit a sheet directly. To set it up:
+these writes go through a google apps script web app (`apps-script/Code.gs`),
+since the browser can't edit a sheet directly. to set it up:
 
-1. Open the sheet → **Extensions → Apps Script**.
-2. Paste the contents of `apps-script/Code.gs`. Adjust `SHEET_ID` / `SHEET_NAME`
+1. open the sheet → **extensions → apps script**.
+2. paste the contents of `apps-script/Code.gs`. adjust `SHEET_ID` / `SHEET_NAME`
    if needed.
-3. **Deploy → New deployment → Web app**. Set *Execute as: Me* and *Who has
-   access: Anyone*, then deploy and copy the `/exec` URL.
-4. Paste that URL into `TASKS_API_URL` at the top of `docs/js/tasks.js`.
+3. **deploy → new deployment → web app**. set *execute as: me* and *who has
+   access: anyone*, then deploy and copy the `/exec` url.
+4. paste that url into `TASKS_API_URL` at the top of `src/js/tasks.js`.
 
-If `TASKS_API_URL` is empty, the tasks page still works as a read-only view
+if `TASKS_API_URL` is empty, the tasks page still works as a read-only view
 but clicking claim/done shows a setup reminder.
 
 ## getting started (if you want to make something like this as well)
-view `docs/js/scoring.js` and change whatever needs to be changed. (sheet url, grades, websites, bonus points, etc.)
+view `src/js/scoring.js` and change whatever needs to be changed. (sheet url, grades, websites, bonus points, etc.)
 
 format a google sheet like the image below:
-![google sheet formatting](docs/imgs/example.webp)
+![google sheet formatting](src/imgs/example.webp)
 
 ## starting the server 
 ```bash
-cd task-leaderboard/docs
+cd task-leaderboard
 
 # serve the folder (any static server works)
 python3 -m http.server 8000

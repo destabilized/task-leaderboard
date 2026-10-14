@@ -141,7 +141,7 @@
 
   function startAction(action, task, name) {
     if (!TASKS_API_URL) {
-      showError('Claiming isn\'t connected yet. Add your Apps Script Web App URL to TASKS_API_URL in docs/js/tasks.js.');
+      showError('Claiming isn\'t connected yet. Add your Apps Script Web App URL to TASKS_API_URL in src/js/tasks.js.');
       return;
     }
     postAction({ action: action, task: task, name: name });
