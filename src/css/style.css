@@ -65,6 +65,13 @@ body {
   flex-wrap: wrap;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .header-title {
   display: flex;
   align-items: center;
@@ -185,21 +192,24 @@ body {
   width: 100%;
 }
 
-.summary-section .tasks-btn {
-  margin-left: auto;
+.tasks-btn {
   display: inline-block;
-  color: var(--rank-gold);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  color: var(--num-tasks);
   text-decoration: none;
-  transition: color var(--transition);
-  font-size: 0.7rem;
-  padding: 2px 8px;
-  border: 1px solid var(--border-light);
+  padding: 7px 14px;
+  border: 1px solid var(--num-tasks);
   border-radius: var(--radius);
+  white-space: nowrap;
+  transition: color var(--transition), background var(--transition);
 }
 
 .tasks-btn:hover {
-  color: var(--text-primary);
-  text-decoration: underline;
+  color: var(--bg-primary);
+  background: var(--num-tasks);
 }
 
 .summary-text {
@@ -666,6 +676,20 @@ tr.data-row.rank-bronze .star {
     width: 100%;
   }
 
+  .header-actions {
+    width: 100%;
+  }
+
+  .header-actions .search-input {
+    order: -1;
+  }
+
+  .tasks-btn {
+    width: 100%;
+    text-align: center;
+    margin-top: auto;
+  }
+
   .filter-divider {
     display: none;
   }
@@ -943,11 +967,6 @@ tr.data-row.rank-bronze .star {
   color: var(--text-secondary);
 }
 
-.unclaimed {
-  color: var(--text-muted);
-  font-style: italic;
-}
-
 .days-cell {
   text-align: center;
 }
@@ -994,6 +1013,49 @@ tr.data-row.rank-bronze .star {
 
 .task-row.completed .task-name-cell {
   text-decoration: line-through;
+}
+
+/* tasks you can act on — draw the eye */
+.task-row.highlight-claim {
+  background: hsla(200, 100%, 67%, 0.06);
+}
+
+.task-row.highlight-claim:hover {
+  background: hsla(200, 100%, 67%, 0.1);
+}
+
+.task-row.highlight-claim .task-name-cell {
+  box-shadow: inset 3px 0 0 var(--num-tasks);
+  padding-left: 15px;
+}
+
+.task-row.highlight-claim .claim-btn {
+  color: var(--bg-primary);
+  background: var(--num-tasks);
+  border-color: var(--num-tasks);
+}
+
+.task-row.highlight-claim .claim-btn:hover {
+  background: hsl(200, 100%, 75%);
+  border-color: hsl(200, 100%, 75%);
+}
+
+.task-row.highlight-reclaim {
+  background: hsla(354, 100%, 68%, 0.06);
+}
+
+.task-row.highlight-reclaim:hover {
+  background: hsla(354, 100%, 68%, 0.1);
+}
+
+.task-row.highlight-reclaim .task-name-cell {
+  box-shadow: inset 3px 0 0 var(--accent-danger);
+  padding-left: 15px;
+}
+
+.task-row.highlight-reclaim .days-num {
+  color: var(--accent-danger);
+  text-shadow: 0 0 12px hsla(354, 100%, 68%, 0.35);
 }
 
 .task-done-tag {
@@ -1075,7 +1137,7 @@ tr.data-row.rank-bronze .star {
 }
 
 @media (hover: none) {
-  .reclaim-btn {
+  .days-cell.revealed .reclaim-btn {
     display: inline-block;
   }
 }

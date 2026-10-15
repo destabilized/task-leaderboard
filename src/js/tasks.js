@@ -19,6 +19,7 @@
   var pending = null;
   var modalCtx = null;
   var modalClosable = true;
+  var revealedTask = null;
 
   /* === helpers === */
 
@@ -211,7 +212,12 @@
 
   function buildRow(t, completed) {
     var tr = document.createElement('tr');
-    tr.className = 'task-row' + (completed ? ' completed' : '');
+    var highlight = '';
+    if (!completed) {
+      if (!t.name) highlight = ' highlight-claim';
+      else if (t.days_claimed > RECLAIM_AFTER_DAYS) highlight = ' highlight-reclaim';
+    }
+    tr.className = 'task-row' + (completed ? ' completed' : '') + highlight;
 
     var claimant;
     if (t.name) {
@@ -231,7 +237,7 @@
              '<span class="days-unit">' + (t.days_claimed === 1 ? 'day' : 'days') + '</span>';
       if (t.days_claimed > RECLAIM_AFTER_DAYS) {
         days += '<button type="button" class="task-action reclaim-btn" data-action="reclaim" ' +
-          'data-task="' + escapeAttr(t.task) + '">reclaim</button>';
+          'data-task="' + escapeAttr(t.task) + '">reclaim?</button>';
       }
     }
 
@@ -246,7 +252,8 @@
         (t.start ? '<div class="task-date">claimed ' + escapeHtml(t.start) + '</div>' : '') +
       '</td>' +
       '<td class="claimant-cell">' + claimant + '</td>' +
-      '<td class="days-cell">' + days + '</td>' +
+      '<td class="days-cell' + (t.task === revealedTask ? ' revealed' : '') +
+        '" data-task="' + escapeAttr(t.task) + '">' + days + '</td>' +
       '<td class="task-points-cell">' + (t.points == null ? '' : t.points) + '</td>' +
       '<td class="actions-cell">' + actions + '</td>';
 
@@ -314,12 +321,29 @@
   document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('task-body').addEventListener('click', function (e) {
       var btn = e.target.closest('button[data-action]');
-      if (!btn) return;
-      var action = btn.dataset.action;
-      var task = btn.dataset.task;
-      if (action === 'claim') openClaim('claim', task);
-      else if (action === 'reclaim') openClaim('reclaim', task);
-      else if (action === 'done') openDone(task, btn.dataset.name);
+      if (btn) {
+        revealedTask = null;
+        document.querySelectorAll('.days-cell.revealed').forEach(function (c) {
+          c.classList.remove('revealed');
+        });
+        var action = btn.dataset.action;
+        var task = btn.dataset.task;
+        if (action === 'claim') openClaim('claim', task);
+        else if (action === 'reclaim') openClaim('reclaim', task);
+        else if (action === 'done') openDone(task, btn.dataset.name);
+        return;
+      }
+
+      // tap the days counter on touch devices to reveal the reclaim button
+      var cell = e.target.closest('.days-cell');
+      if (cell && cell.querySelector('.reclaim-btn')) {
+        var wasOpen = cell.classList.contains('revealed');
+        revealedTask = wasOpen ? null : cell.dataset.task;
+        document.querySelectorAll('.days-cell.revealed').forEach(function (c) {
+          c.classList.remove('revealed');
+        });
+        if (revealedTask) cell.classList.add('revealed');
+      }
     });
 
     document.getElementById('modal-close').addEventListener('click', closeModal);

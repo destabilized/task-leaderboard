@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MVTHS Robotics Task Leaderboard</title>
   <link rel="icon" type="image/svg+xml" href="src/imgs/logo.svg">
-  <link rel="stylesheet" href="src/css/style.css?v=13">
+  <link rel="stylesheet" href="src/css/style.css?v=17">
 </head>
 <body>
   <div class="app">
@@ -16,13 +16,16 @@
           <img class="logo" src="src/imgs/logo.svg" alt="MVTHS Engineering logo">
           <span>Robotics Task Leaderboard</span>
         </h1>
-        <input
-          type="text"
-          id="search-input"
-          class="search-input"
-          placeholder="Search all names..."
-          autocomplete="off"
-        >
+        <div class="header-actions">
+          <a class="tasks-btn" href="tasks/">available tasks</a>
+          <input
+            type="text"
+            id="search-input"
+            class="search-input"
+            placeholder="search all names..."
+            autocomplete="off"
+          >
+        </div>
       </div>
     </header>
 
@@ -53,7 +56,6 @@
     <section class="summary-section">
       <span id="summary-text" class="summary-text"></span>
       <span id="source-badge" class="source-badge"></span>
-      <a class="tasks-btn" href="tasks/" target="_blank" rel="noopener">avaliable-tasks</a>
     </section>
 
     <main class="leaderboard-container">
@@ -82,7 +84,7 @@
     </footer>
 
   </div>
-  <script src="src/js/scoring.js?v=13"></script>
-  <script src="src/js/app.js?v=13"></script>
+  <script src="src/js/scoring.js?v=17"></script>
+  <script src="src/js/app.js?v=17"></script>
 </body>
 </html>
