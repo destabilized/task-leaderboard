@@ -1,7 +1,7 @@
 /* === state === */
 let usersData = {};
 let taskCounts = null;
-let activeRange = '24h';
+let activeRange = '30d';
 let gradeFilter = 'all';
 let searchQuery = '';
 let expandedUser = null;

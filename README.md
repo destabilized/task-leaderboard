@@ -23,6 +23,8 @@ static site—it's a published csv sheet that is pulled from the browser and com
 
 the amount of points given per task is based on what the teachers (mr. christy and mr. l) deem as appropriate. harder to finish tasks (such as fixing / making something) will always be worth more than sorting / putting items away. 
 
+when multiple people are listed on a task, the task's points are divided evenly between them instead of each person getting the full amount. shares are rounded to the nearest 0.5 points (ties round up), so a 3 point task split between 2 people is worth 1.5 each, between 4 people is 1 each, and between 5 people is 0.5 each.
+
 in addition, to incentivize underclassmen to do more tasks, there are additional point bonuses based on your grade:
 
 +0.2 points for sophomores and +0.1 points for juniors
@@ -43,8 +45,11 @@ in addition, to incentivize underclassmen to do more tasks, there are additional
   columns.
 - **done** — a claimed task shows a `done` button that writes today's date into
   the `End Date` column.
-- **reclaim** — if a task has been claimed for more than 10 days, a `reclaim`
-  button appears (hover the days counter on desktop) to reassign it.
+- **reclaim** — if a task has been claimed for more than 6 *school* days, a
+  `reclaim` button appears (hover the days counter on desktop) to reassign it.
+  weekends and any dates listed in `EXCLUDED_DAYS` in `src/js/scoring.js`
+  don't count toward that timer. add breaks/holidays there in `YYYY-MM-DD`
+  format.
 
 these writes go through a google apps script web app (`apps-script/Code.gs`),
 since the browser can't edit a sheet directly. to set it up:

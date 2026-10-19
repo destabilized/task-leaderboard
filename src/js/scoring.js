@@ -1,7 +1,8 @@
 /* leaderboard scoring engine — ported from app.py.
    Pure client-side: parses the published Google Sheet CSV and computes
    leaders, counts, points, and breakdowns. No backend.
-   Task points are read straight from the sheet's "Points" column; a
+   Task points are read straight from the sheet's "Points" column, divided
+   evenly among everyone on the task (rounded to the nearest 0.5), and a
    grade-level bonus is added on top. No keyword complexity or speed math. */
 
 var LeaderboardScoring = (function () {
@@ -40,6 +41,39 @@ var LeaderboardScoring = (function () {
   };
 
   var GRADE_BONUS = { 10: 0.2, 11: 0.1, 12: 0.0 };
+
+  var EXCLUDED_DAYS = [
+    '2026-11-11', 
+    '2026-11-26',
+    '2026-11-27',
+    '2026-12-24', 
+    '2026-12-25',
+    '2026-12-28',
+    '2026-12-29',
+    '2026-12-30',
+    '2026-12-31',
+    '2027-1-1', 
+    '2027-1-18',
+    '2027-2-15',
+    '2027-2-16',
+    '2027-2-17',
+    '2027-2-18',
+    '2027-2-19',
+    '2027-3-9',
+    '2027-3-26',
+    '2027-4-19',
+    '2027-4-20',
+    '2027-4-21',
+    '2027-4-22',
+    '2027-4-23',
+    '2027-5-31',
+    '2027-6-18',
+  ];
+
+  // task that is hidden bc they aren't real tasks and google sheets is stupid
+  var HIDDEN_TASKS = [
+    'tools/machine compliance',
+  ];
 
   var NAME_CORRECTIONS = { 'Asyia': 'Asiya', };
 
@@ -169,12 +203,59 @@ var LeaderboardScoring = (function () {
     return Boolean(row['End Date']);
   }
 
+  var hiddenTaskKeys = null;
+
+  function isHiddenTask(task) {
+    if (!hiddenTaskKeys) {
+      hiddenTaskKeys = {};
+      HIDDEN_TASKS.forEach(function (name) { hiddenTaskKeys[nameKey(name)] = true; });
+    }
+    return Boolean(hiddenTaskKeys[nameKey(task)]);
+  }
+
+  /* === school days === */
+
+  var excludedDayKeys = null;
+
+  function getExcludedDayKeys() {
+    if (excludedDayKeys) return excludedDayKeys;
+    excludedDayKeys = {};
+    EXCLUDED_DAYS.forEach(function (value) {
+      var d = parseDate(value);
+      if (d) excludedDayKeys[isoDate(d)] = true;
+    });
+    return excludedDayKeys;
+  }
+
+  function isSchoolDay(date) {
+    var day = date.getDay();
+    if (day === 0 || day === 6) return false;
+    return !getExcludedDayKeys()[isoDate(date)];
+  }
+
+  function countSchoolDays(start, end) {
+    var count = 0;
+    var d = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+    var last = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+    d.setDate(d.getDate() + 1);
+    while (d <= last) {
+      if (isSchoolDay(d)) count++;
+      d.setDate(d.getDate() + 1);
+    }
+    return count;
+  }
+
   /* === scoring === */
 
-  function scoreTask(points, name) {
+  function roundHalf(n) {
+    return Math.round(n * 2) / 2;
+  }
+
+  function scoreTask(points, name, assigneeCount) {
     var base = Number(points);
     if (!isFinite(base) || base < 0) base = 0;
     base = round2(base);
+    if (assigneeCount > 1) base = round2(roundHalf(base / assigneeCount));
     var grade = USER_GRADES[name] !== undefined ? USER_GRADES[name] : 9;
     var bonus = GRADE_BONUS[grade] !== undefined ? GRADE_BONUS[grade] : 0.0;
     var weighted = round2(base + bonus);
@@ -204,11 +285,20 @@ var LeaderboardScoring = (function () {
       var end = parseDate(r['End Date']);
       if (!end) return;
       if (!start) start = end;
+      var names = [];
       splitNames(r['Name'] || '').forEach(function (rawName) {
         var n = normalizeName(rawName);
-        if (!isIgnoredName(n)) {
-          tasks.push({ task: (r['Task'] || '').trim(), name: n, start: start, end: end, points: r['Points'] });
-        }
+        if (!isIgnoredName(n) && names.indexOf(n) === -1) names.push(n);
+      });
+      names.forEach(function (n) {
+        tasks.push({
+          task: (r['Task'] || '').trim(),
+          name: n,
+          start: start,
+          end: end,
+          points: r['Points'],
+          assignee_count: names.length,
+        });
       });
     });
 
@@ -257,7 +347,7 @@ var LeaderboardScoring = (function () {
     });
 
     tasks.forEach(function (t) {
-      var s = scoreTask(t.points, t.name);
+      var s = scoreTask(t.points, t.name, t.assignee_count);
       if (!users[t.name]) {
         users[t.name] = { grade: s.grade, website: null, tasks: [] };
       }
@@ -290,7 +380,7 @@ var LeaderboardScoring = (function () {
 
     rows.forEach(function (r) {
       var task = (r['Task'] || '').trim();
-      if (!task) return;
+      if (!task || isHiddenTask(task)) return;
 
       var name = displayName(r['Name']);
       var start = parseDate(r['Start Date']);
@@ -303,8 +393,7 @@ var LeaderboardScoring = (function () {
 
       var daysClaimed = null;
       if (claim) {
-        var claimMid = new Date(claim.getFullYear(), claim.getMonth(), claim.getDate());
-        daysClaimed = Math.max(0, Math.round((today.getTime() - claimMid.getTime()) / DAY_MS));
+        daysClaimed = countSchoolDays(claim, today);
       }
 
       list.push({
@@ -348,6 +437,8 @@ var LeaderboardScoring = (function () {
     parseCsv: parseCsv,
     parseDate: parseDate,
     splitNames: splitNames,
+    isSchoolDay: isSchoolDay,
+    countSchoolDays: countSchoolDays,
     processRows: processRows,
     countCompletedTasks: countCompletedTasks,
     computeUsers: computeUsers,

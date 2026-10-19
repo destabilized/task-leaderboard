@@ -9,7 +9,7 @@
   'use strict';
 
   var REFRESH_MS = 5000;
-  var RECLAIM_AFTER_DAYS = 10;
+  var RECLAIM_AFTER_DAYS = 5;
   var CONFIRM_TIMEOUT_MS = 20000;
   var PENDING_POLL_MS = 1500;
 
